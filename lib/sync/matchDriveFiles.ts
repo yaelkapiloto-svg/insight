@@ -1,0 +1,82 @@
+import { listFolder, type DriveFile } from "@/lib/google/drive";
+import { matchMonth, matchContentType, matchMetric, MONTH_ALIASES } from "@/lib/fuzzy";
+
+export interface TopContentFile {
+  metric: string;
+  contentType: string;
+  driveFileId: string;
+}
+
+function guessYear(name: string): string | null {
+  const m = name.match(/\b(20\d{2})\b/);
+  return m ? m[1] : null;
+}
+
+function findMonthFolder(folders: DriveFile[], targetMonth: string): DriveFile | null {
+  const [year, mm] = targetMonth.split("-");
+  for (const folder of folders) {
+    const name = folder.name.trim();
+    const folderYear = guessYear(name);
+    if (folderYear && folderYear !== year) continue;
+
+    const monthCode = matchMonth(name.replace(/\b20\d{2}\b/, "").trim());
+    if (monthCode === mm) return folder;
+  }
+  return null;
+}
+
+function findContentTypeFolder(folders: DriveFile[], contentType: string): DriveFile | null {
+  for (const folder of folders) {
+    const matched = matchContentType(folder.name);
+    if (matched === contentType) return folder;
+  }
+  return null;
+}
+
+function findMetricFile(files: DriveFile[], metric: string): DriveFile | null {
+  for (const file of files) {
+    const nameNoExt = file.name.replace(/\.[^.]+$/, "");
+    const matched = matchMetric(nameNoExt);
+    if (matched === metric) return file;
+  }
+  return null;
+}
+
+export async function matchDriveFiles(
+  rootFolderId: string,
+  month: string,
+  contentTypes: string[],
+  metrics: string[]
+): Promise<TopContentFile[]> {
+  const rootItems = await listFolder(rootFolderId);
+  const monthFolder = findMonthFolder(
+    rootItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+    month
+  );
+  if (!monthFolder) return [];
+
+  const monthItems = await listFolder(monthFolder.id);
+  const results: TopContentFile[] = [];
+
+  for (const contentType of contentTypes) {
+    const ctFolder = findContentTypeFolder(
+      monthItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+      contentType
+    );
+    if (!ctFolder) continue;
+
+    const ctFiles = await listFolder(ctFolder.id);
+
+    for (const metric of metrics) {
+      const file = findMetricFile(
+        ctFiles.filter((f) => f.mimeType.startsWith("image/")),
+        metric
+      );
+      if (file) {
+        results.push({ metric, contentType, driveFileId: file.id });
+      }
+    }
+  }
+
+  return results;
+}
