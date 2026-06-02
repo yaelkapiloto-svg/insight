@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "kapiloto_admin_session";
@@ -16,34 +15,71 @@ function getSecret(): string {
   return secret;
 }
 
-function sign(payload: string): string {
-  return crypto
-    .createHmac("sha256", getSecret())
-    .update(payload)
-    .digest("base64url");
+function base64UrlEncode(bytes: Uint8Array): string {
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function verify(payload: string, signature: string): boolean {
-  const expected = sign(payload);
-  if (expected.length !== signature.length) return false;
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
+function base64UrlDecode(value: string): Uint8Array {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padLen = (4 - (padded.length % 4)) % 4;
+  const str = atob(padded + "=".repeat(padLen));
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+  return bytes;
+}
+
+function utf8Bytes(s: string): Uint8Array {
+  return new TextEncoder().encode(s);
+}
+
+function utf8String(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
+}
+
+async function getKey(): Promise<CryptoKey> {
+  const keyBytes = utf8Bytes(getSecret());
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes as BufferSource,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
   );
 }
 
-export function encodeSession(data: SessionData): string {
-  const payload = Buffer.from(JSON.stringify(data)).toString("base64url");
-  const signature = sign(payload);
+async function sign(payload: string): Promise<string> {
+  const key = await getKey();
+  const data = utf8Bytes(payload);
+  const sig = await crypto.subtle.sign("HMAC", key, data as BufferSource);
+  return base64UrlEncode(new Uint8Array(sig));
+}
+
+async function verify(payload: string, signature: string): Promise<boolean> {
+  const key = await getKey();
+  const sigBytes = base64UrlDecode(signature);
+  const data = utf8Bytes(payload);
+  return crypto.subtle.verify(
+    "HMAC",
+    key,
+    sigBytes as BufferSource,
+    data as BufferSource
+  );
+}
+
+export async function encodeSession(data: SessionData): Promise<string> {
+  const payload = base64UrlEncode(utf8Bytes(JSON.stringify(data)));
+  const signature = await sign(payload);
   return `${payload}.${signature}`;
 }
 
-export function decodeSession(value: string): SessionData | null {
+export async function decodeSession(value: string): Promise<SessionData | null> {
   try {
     const [payload, signature] = value.split(".");
     if (!payload || !signature) return null;
-    if (!verify(payload, signature)) return null;
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString());
+    if (!(await verify(payload, signature))) return null;
+    const data = JSON.parse(utf8String(base64UrlDecode(payload)));
     if (data.expiresAt < Date.now()) return null;
     return data;
   } catch {
@@ -64,7 +100,7 @@ export async function setSession(data: Omit<SessionData, "expiresAt">) {
     ...data,
     expiresAt: Date.now() + MAX_AGE_SECONDS * 1000,
   };
-  const value = encodeSession(session);
+  const value = await encodeSession(session);
   cookieStore.set(COOKIE_NAME, value, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
