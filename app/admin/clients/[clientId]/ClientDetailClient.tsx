@@ -86,6 +86,30 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
     }
   }
 
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  async function sync() {
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const res = await fetch(`/api/clients/${client.id}/sync`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setSyncStatus("הסנכרון הצליח! 🎉");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        setSyncStatus(`שגיאה: ${data.error || "סנכרון נכשל"}`);
+      }
+    } catch (err) {
+      setSyncStatus(`שגיאת רשת: ${err instanceof Error ? err.message : "לא ידוע"}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -93,10 +117,23 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
           <h1 className="text-2xl font-bold text-[#1a1a2e]">{client.name}</h1>
           <p className="text-sm text-gray-500 mt-0.5">פורטל לקוח</p>
         </div>
-        <Button variant="secondary" onClick={copyPortalUrl}>
-          {copied ? "✓ הועתק" : "העתק קישור לקוח"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={sync} disabled={syncing}>
+            {syncing ? "מסנכרן..." : "🔄 סנכרן נתונים"}
+          </Button>
+          <Button variant="secondary" onClick={copyPortalUrl}>
+            {copied ? "✓ הועתק" : "העתק קישור לקוח"}
+          </Button>
+        </div>
       </div>
+
+      {syncStatus && (
+        <div className={`mb-4 p-3 rounded-lg text-sm ${
+          syncStatus.includes("שגיאה") ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+        }`}>
+          {syncStatus}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
