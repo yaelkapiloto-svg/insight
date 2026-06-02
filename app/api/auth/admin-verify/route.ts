@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth/magicLink";
-import { setSession } from "@/lib/auth/session";
+import { encodeSession, COOKIE_NAME } from "@/lib/auth/session";
+
+const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
@@ -14,7 +16,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/login?error=invalid", request.url));
   }
 
-  await setSession({ isAdmin: true, email });
+  const sessionValue = await encodeSession({
+    isAdmin: true,
+    email,
+    expiresAt: Date.now() + MAX_AGE_SECONDS * 1000,
+  });
 
-  return NextResponse.redirect(new URL("/admin", request.url));
+  const response = NextResponse.redirect(new URL("/admin", request.url));
+  response.cookies.set(COOKIE_NAME, sessionValue, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: MAX_AGE_SECONDS,
+  });
+
+  return response;
 }

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clearSession } from "@/lib/auth/session";
+import { COOKIE_NAME } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
-  await clearSession();
-  return NextResponse.redirect(new URL("/admin/login", request.url));
+  const response = NextResponse.redirect(new URL("/admin/login", request.url), {
+    status: 303,
+  });
+  response.cookies.delete(COOKIE_NAME);
+  return response;
 }
