@@ -1,26 +1,28 @@
-import { parseRows } from "@/lib/google/sheets";
-import { matchMonth } from "@/lib/fuzzy";
-
 function num(v: string | undefined): number | null {
-  if (!v || !v.trim()) return null;
-  const n = Number(v.replace(/,/g, "").trim());
+  if (!v) return null;
+  const trimmed = v.replace(/,/g, "").replace(/%/g, "").replace(/\s/g, "").trim();
+  if (!trimmed || trimmed === "-") return null;
+  const n = Number(trimmed);
   return isNaN(n) ? null : n;
 }
 
-function parseMonthCell(v: string): string | null {
-  // Expect "MM/YYYY", "YYYY-MM", or Hebrew month + year like "ינואר 2025"
-  if (!v?.trim()) return null;
-  const iso = v.match(/^(\d{4})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-01`;
-  const slash = v.match(/^(\d{1,2})\/(\d{4})/);
-  if (slash) return `${slash[2]}-${slash[1].padStart(2, "0")}-01`;
+function parseMonthCell(v: string | undefined): string | null {
+  if (!v) return null;
+  const cleaned = v.trim();
 
-  const parts = v.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    const mm = matchMonth(parts[0]);
-    const year = parts[1].match(/^\d{4}$/) ? parts[1] : parts[0].match(/^\d{4}$/) ? parts[0] : null;
-    if (mm && year) return `${year}-${mm}-01`;
+  // ISO format YYYY-MM
+  const iso = cleaned.match(/^(\d{4})-(\d{1,2})/);
+  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-01`;
+
+  // MM/YY or MM/YYYY
+  const slash = cleaned.match(/^(\d{1,2})\/(\d{2,4})$/);
+  if (slash) {
+    const month = slash[1].padStart(2, "0");
+    const yearRaw = slash[2];
+    const year = yearRaw.length === 2 ? `20${yearRaw}` : yearRaw;
+    return `${year}-${month}-01`;
   }
+
   return null;
 }
 
@@ -37,47 +39,59 @@ export interface ParsedMonthlyRow {
   rawData: Record<string, string>;
 }
 
-const COLUMN_MAP: Record<string, keyof ParsedMonthlyRow> = {
-  // Hebrew headers
-  "חודש": "month",
-  "ימי צילום": "filmingDays",
-  "פגישות": "meetingsCount",
-  "צפיות": "views",
-  "הגעה": "reach",
-  "אינטראקציות": "interactions",
-  "קליקים": "clicks",
-  "עוקבים": "followersCount",
-  "גדילת עוקבים": "followersGrowth",
-  // English fallbacks
-  "month": "month",
-  "filming days": "filmingDays",
-  "meetings": "meetingsCount",
-  "views": "views",
-  "reach": "reach",
-  "interactions": "interactions",
-  "clicks": "clicks",
-  "followers": "followersCount",
-  "followers growth": "followersGrowth",
-};
+/**
+ * Five Fingers sheet structure:
+ * - Rows 1-2 are header rows (category + sub-header)
+ * - Row 3+ is data
+ * Columns (0-indexed):
+ *   0 (A) = month "MM/YY"
+ *   1 (B) = views total (צפיות > טוטאל)
+ *   5 (F) = reach (ריץ')
+ *   6 (G) = interactions total (אינטראקציות > טוטאל)
+ *  11 (L) = followers count (עוקבים)
+ *  12 (M) = followers growth (כמה עוקבים נוספו)
+ *  13 (N) = post count (מס׳ פוסטים שעלו)
+ *  14 (O) = reels count (מס׳ רילס שעלו)
+ *  15 (P) = clicks (הקלקות על הלינק)
+ */
+const COL = {
+  month: 0,
+  views: 1,
+  reach: 5,
+  interactions: 6,
+  followers: 11,
+  followersGrowth: 12,
+  clicks: 15,
+} as const;
 
 export function parseMonthlyData(rows: string[][]): ParsedMonthlyRow[] {
-  return parseRows(rows, (headers, row) => {
-    const result: Partial<ParsedMonthlyRow> & { rawData: Record<string, string> } = {
-      rawData: {},
-    };
+  if (rows.length < 3) return [];
 
-    headers.forEach((h, i) => {
-      const v = row[i] ?? "";
-      result.rawData[h] = v;
-      const field = COLUMN_MAP[h.trim()];
-      if (!field) return;
-      if (field === "month") {
-        result.month = parseMonthCell(v) ?? undefined;
-      } else {
-        (result as Record<string, unknown>)[field] = num(v);
-      }
-    });
+  const headers = rows[1] ?? rows[0] ?? [];
+  const dataRows = rows.slice(2);
 
-    return result as ParsedMonthlyRow;
-  }).filter((r) => r.month);
+  return dataRows
+    .map((row) => {
+      const month = parseMonthCell(row[COL.month]);
+      if (!month) return null;
+
+      const rawData: Record<string, string> = {};
+      headers.forEach((h, i) => {
+        if (h && row[i]) rawData[`${h}_${i}`] = row[i];
+      });
+
+      return {
+        month,
+        filmingDays: null,
+        meetingsCount: null,
+        views: num(row[COL.views]),
+        reach: num(row[COL.reach]),
+        interactions: num(row[COL.interactions]),
+        clicks: num(row[COL.clicks]),
+        followersCount: num(row[COL.followers]),
+        followersGrowth: num(row[COL.followersGrowth]),
+        rawData,
+      } as ParsedMonthlyRow;
+    })
+    .filter((r): r is ParsedMonthlyRow => r !== null);
 }
