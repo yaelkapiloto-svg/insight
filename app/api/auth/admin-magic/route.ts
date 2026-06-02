@@ -15,16 +15,14 @@ export async function POST(request: NextRequest) {
   }
 
   const token = await createAdminToken(email);
-  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/admin-verify?token=${token}`;
+  const loginUrl = `${request.nextUrl.origin}/api/auth/admin-verify?token=${token}`;
 
-  // If Resend is configured — send by email. Otherwise return the URL directly.
   if (process.env.RESEND_API_KEY) {
     try {
       await sendAdminMagicLink(email, token);
       return Response.json({ ok: true });
     } catch (err) {
       console.error("Email send error:", err);
-      // Fall through to showing the link on screen
     }
   }
 
