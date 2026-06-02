@@ -6,7 +6,7 @@ import { generateClientToken } from "@/lib/auth/magicLink";
 
 async function requireAdmin() {
   const session = await getSession();
-  if (!session.isAdmin) {
+  if (!session?.isAdmin) {
     return new Response("Unauthorized", { status: 401 });
   }
   return null;

@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth/session";
 
 async function requireAdmin() {
   const session = await getSession();
-  if (!session.isAdmin) return new Response("Unauthorized", { status: 401 });
+  if (!session?.isAdmin) return new Response("Unauthorized", { status: 401 });
   return null;
 }
 

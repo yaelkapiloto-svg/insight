@@ -1,8 +1,7 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { NextRequest, NextResponse } from "next/server";
+import { clearSession } from "@/lib/auth/session";
 
-export async function POST() {
-  const session = await getSession();
-  session.destroy();
-  return redirect("/admin/login");
+export async function POST(request: NextRequest) {
+  await clearSession();
+  return NextResponse.redirect(new URL("/admin/login", request.url));
 }

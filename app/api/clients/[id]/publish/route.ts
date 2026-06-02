@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session.isAdmin) return new Response("Unauthorized", { status: 401 });
+  if (!session?.isAdmin) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
   const { month, analysisHtml, summaryHtml } = await request.json();
@@ -58,7 +58,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session.isAdmin) return new Response("Unauthorized", { status: 401 });
+  if (!session?.isAdmin) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
   const { month, analysisHtml, summaryHtml } = await request.json();

@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session.isAdmin) return new Response("Unauthorized", { status: 401 });
+  if (!session?.isAdmin) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
   const newToken = generateClientToken();
