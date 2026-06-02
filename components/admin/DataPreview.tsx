@@ -14,7 +14,15 @@ interface DataPreviewProps {
 
 function fmt(n: number | null): string {
   if (n === null || n === undefined) return "—";
-  return n.toLocaleString("he-IL");
+  return n.toLocaleString("en-US");
+}
+
+function Num({ n, bold }: { n: number | null; bold?: boolean }) {
+  return (
+    <span dir="ltr" className={`inline-block ${bold ? "font-bold" : ""}`}>
+      {fmt(n)}
+    </span>
+  );
 }
 
 function ChangeArrow({ change }: { change: ChangeData[keyof ChangeData] }) {
@@ -74,22 +82,24 @@ export function DataPreview({
             {METRICS.map((m) => (
               <tr key={m.key}>
                 <td className="py-2 font-medium text-[#1a1a2e]">{m.label}</td>
-                <td className="py-2 font-bold">{fmt(current[m.key])}</td>
-                <td className="py-2 text-gray-500">{fmt(previous?.[m.key] ?? null)}</td>
+                <td className="py-2"><Num n={current[m.key]} bold /></td>
+                <td className="py-2 text-gray-500"><Num n={previous?.[m.key] ?? null} /></td>
                 <td className="py-2">
                   <ChangeArrow change={changes[m.key]} />
                 </td>
-                <td className="py-2 text-gray-500">{fmt(annualAverage[m.key])}</td>
-                <td className="py-2 text-[#e94560]">{fmt(threeMonthAverage[m.key])}</td>
+                <td className="py-2 text-gray-500"><Num n={annualAverage[m.key]} /></td>
+                <td className="py-2 text-[#e94560]"><Num n={threeMonthAverage[m.key]} /></td>
               </tr>
             ))}
             <tr>
               <td className="py-2 font-medium text-[#1a1a2e]">עוקבים</td>
-              <td className="py-2 font-bold">{fmt(current.followersCount)}</td>
-              <td className="py-2 text-gray-500">{fmt(previous?.followersCount ?? null)}</td>
+              <td className="py-2"><Num n={current.followersCount} bold /></td>
+              <td className="py-2 text-gray-500"><Num n={previous?.followersCount ?? null} /></td>
               <td className="py-2 text-green-600 text-xs font-medium">
-                {current.followersGrowth !== null && current.followersGrowth >= 0 ? "+" : ""}
-                {fmt(current.followersGrowth)}
+                <span dir="ltr">
+                  {current.followersGrowth !== null && current.followersGrowth >= 0 ? "+" : ""}
+                  {fmt(current.followersGrowth)}
+                </span>
               </td>
               <td className="py-2 text-gray-400" colSpan={2}>—</td>
             </tr>

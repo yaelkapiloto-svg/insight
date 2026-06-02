@@ -50,11 +50,11 @@ export function FollowersTable({ history }: Props) {
             {sorted.map((row) => (
               <tr key={row.month} className="hover:bg-[#f8f8fb] transition">
                 <td className="px-4 py-2.5 font-medium text-[#1a1a2e]">{formatMonth(row.month)}</td>
-                <td className="px-4 py-2.5">{row.followersCount?.toLocaleString("he-IL") ?? "—"}</td>
+                <td className="px-4 py-2.5" dir="ltr">{row.followersCount?.toLocaleString("en-US") ?? "—"}</td>
                 <td className="px-4 py-2.5">
                   {row.followersGrowth !== null ? (
-                    <span className={row.followersGrowth >= 0 ? "text-green-600" : "text-red-600"}>
-                      {row.followersGrowth >= 0 ? "+" : ""}{row.followersGrowth.toLocaleString("he-IL")}
+                    <span className={row.followersGrowth >= 0 ? "text-green-600" : "text-red-600"} dir="ltr">
+                      {row.followersGrowth >= 0 ? "+" : ""}{row.followersGrowth.toLocaleString("en-US")}
                     </span>
                   ) : "—"}
                 </td>

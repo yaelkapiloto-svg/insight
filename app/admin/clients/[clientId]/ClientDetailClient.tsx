@@ -55,6 +55,7 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [generatingAI, setGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [editorRefreshKey, setEditorRefreshKey] = useState(0);
 
   useEffect(() => {
     async function loadData() {

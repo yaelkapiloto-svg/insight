@@ -20,7 +20,7 @@ function fmt(n: number | null): string {
   if (n === null) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString("he-IL");
+  return n.toLocaleString("en-US");
 }
 
 interface Props {
@@ -49,7 +49,7 @@ export function MonthlyComparison({ current, previous, changes, currentMonthLabe
 
               <div className="mb-3">
                 <div className="text-xs text-gray-400 mb-0.5">{currentMonthLabel}</div>
-                <div className="text-2xl font-bold text-[#1a1a2e]">
+                <div className="text-2xl font-bold text-[#1a1a2e]" dir="ltr">
                   {fmt(current?.[metric] ?? null)}
                 </div>
                 {change && (
@@ -63,7 +63,7 @@ export function MonthlyComparison({ current, previous, changes, currentMonthLabe
 
               <div className="border-t border-[#e2e8f0] pt-2">
                 <div className="text-xs text-gray-400 mb-0.5">{previousMonthLabel}</div>
-                <div className="text-sm font-medium text-gray-500">
+                <div className="text-sm font-medium text-gray-500" dir="ltr">
                   {fmt(previous?.[metric] ?? null)}
                 </div>
               </div>

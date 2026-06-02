@@ -12,7 +12,7 @@ function formatNum(n: number | null): string {
   if (n === null) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString("he-IL");
+  return n.toLocaleString("en-US");
 }
 
 interface Props {
@@ -31,13 +31,13 @@ export function AverageCards({ averages }: Props) {
             <div className="text-sm font-medium text-[#1a1a2e]">{METRIC_LABELS[metric]}</div>
             <div>
               <div className="text-xs text-gray-400 mb-0.5">ממוצע שנתי</div>
-              <div className="text-xl font-bold text-[#1a1a2e]">
+              <div className="text-xl font-bold text-[#1a1a2e]" dir="ltr">
                 {formatNum(averages.annual[metric])}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-400 mb-0.5">ממוצע 3 חודשים</div>
-              <div className="text-lg font-semibold text-[#e94560]">
+              <div className="text-lg font-semibold text-[#e94560]" dir="ltr">
                 {formatNum(averages.threeMonth[metric])}
               </div>
             </div>
