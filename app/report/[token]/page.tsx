@@ -118,7 +118,7 @@ export default async function ReportPage({
             ? `פורסם: ${new Date(data.publishedAt).toLocaleDateString("he-IL")}`
             : ""}
         </p>
-        <DownloadPDFButton clientName={data.client.name} month={data.month} />
+        <DownloadPDFButton />
       </footer>
     </div>
   );
