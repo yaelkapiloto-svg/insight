@@ -55,7 +55,6 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [generatingAI, setGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [editorRefreshKey, setEditorRefreshKey] = useState(0);
 
   useEffect(() => {
     async function loadData() {
@@ -160,7 +159,6 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
       const data = await res.json();
       if (res.ok) {
         setAnalysisHtml(data.html);
-        setEditorRefreshKey((k) => k + 1);
       } else {
         setAiError(data.error || "שגיאה ביצירת ניתוח");
       }
@@ -303,7 +301,7 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
                 </div>
               )}
               <RichTextEditor
-                key={`analysis-${selectedMonth}-${editorRefreshKey}`}
+                key={`analysis-${selectedMonth}`}
                 value={analysisHtml}
                 onChange={setAnalysisHtml}
                 placeholder="כתבי כאן את הניתוח המילולי או לחצי על 'ניתוח אוטומטי'..."

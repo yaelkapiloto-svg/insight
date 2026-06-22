@@ -7,11 +7,12 @@ import {
   reportMonths,
   syncLogs,
 } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { readSheet } from "@/lib/google/sheets";
 import { parseMonthlyData } from "./parseMonthlyData";
 import { parseContentTypeData } from "./parseContentType";
-import { matchDriveFiles } from "./matchDriveFiles";
+import { findScreenshot } from "./matchDriveFiles";
+import { pickWinners } from "@/lib/calculations/topContent";
 
 const MONTHLY_SHEET = "נתונים פר חודש";
 const CONTENT_TYPE_SHEET = "נתונים סוג תוכן";
@@ -68,71 +69,77 @@ export async function syncClient(clientId: string): Promise<void> {
         });
     }
 
-    // 2. Parse content-type metrics (sheet has all months together)
-    const ctRows = await readSheet(client.sheetId, CONTENT_TYPE_SHEET);
-    // Detect month column and group rows by month
-    if (ctRows.length > 1) {
-      const headers = ctRows[0];
-      const monthIdx = headers.findIndex((h) => h.toLowerCase().includes("חודש") || h.toLowerCase() === "month");
-      const monthSet = new Set<string>();
-      if (monthIdx >= 0) {
-        ctRows.slice(1).forEach((r) => {
-          const m = r[monthIdx];
-          if (m) monthSet.add(m);
-        });
-        for (const rawMonth of monthSet) {
-          const monthRows = [ctRows[0], ...ctRows.slice(1).filter((r) => r[monthIdx] === rawMonth)];
-          const parsedMonth = parsed.find((p) => p.rawData[headers[monthIdx]] === rawMonth);
-          if (!parsedMonth) continue;
-          const ctData = parseContentTypeData(monthRows, parsedMonth.month);
-          for (const ct of ctData) {
-            await db
-              .insert(contentTypeMetrics)
-              .values({ clientId, ...ct })
-              .onConflictDoUpdate({
-                target: [contentTypeMetrics.clientId, contentTypeMetrics.month, contentTypeMetrics.contentType],
-                set: {
-                  views: ct.views,
-                  reach: ct.reach,
-                  interactions: ct.interactions,
-                  clicks: ct.clicks,
-                  postCount: ct.postCount,
-                  rawData: ct.rawData,
-                },
-              });
-          }
-        }
+    // 2. Parse content-type metrics for all months at once
+    let parsedCT: Awaited<ReturnType<typeof parseContentTypeData>> = [];
+    try {
+      const ctRows = await readSheet(client.sheetId, CONTENT_TYPE_SHEET);
+      parsedCT = parseContentTypeData(ctRows);
+      for (const ct of parsedCT) {
+        await db
+          .insert(contentTypeMetrics)
+          .values({ clientId, ...ct })
+          .onConflictDoUpdate({
+            target: [
+              contentTypeMetrics.clientId,
+              contentTypeMetrics.month,
+              contentTypeMetrics.contentType,
+            ],
+            set: {
+              views: ct.views,
+              reach: ct.reach,
+              interactions: ct.interactions,
+              clicks: ct.clicks,
+              postCount: ct.postCount,
+              rawData: ct.rawData,
+            },
+          });
       }
+    } catch (err) {
+      console.error("Content type sheet parsing failed:", err);
     }
 
-    // 3. Match Drive screenshots for each month's top content
+    // 3. For each month, pick winners and find matching screenshots
     if (client.driveFolderId) {
-      const metrics = ["views", "reach", "interactions", "clicks"];
-      const contentTypes = ["reels", "stories", "posts", "carousel"];
+      // Group content type rows by month
+      const byMonth = new Map<string, typeof parsedCT>();
+      for (const row of parsedCT) {
+        const list = byMonth.get(row.month) ?? [];
+        list.push(row);
+        byMonth.set(row.month, list);
+      }
 
-      for (const row of parsed) {
-        const files = await matchDriveFiles(
-          client.driveFolderId,
-          row.month,
-          contentTypes,
-          metrics
-        );
-        for (const file of files) {
+      for (const [month, monthRows] of byMonth) {
+        const winners = pickWinners(monthRows);
+
+        for (const winner of winners) {
+          let driveFileId: string | null = null;
+          try {
+            driveFileId = await findScreenshot(
+              client.driveFolderId,
+              month,
+              winner.contentType,
+              winner.metric
+            );
+          } catch (err) {
+            console.error("Drive screenshot lookup failed:", err);
+          }
+
           await db
             .insert(topContent)
             .values({
               clientId,
-              month: row.month,
-              metric: file.metric,
-              contentType: file.contentType,
-              driveFileId: file.driveFileId,
-              value: null,
+              month,
+              metric: winner.metric,
+              contentType: winner.contentType,
+              value: winner.value,
+              driveFileId,
             })
             .onConflictDoUpdate({
               target: [topContent.clientId, topContent.month, topContent.metric],
               set: {
-                contentType: file.contentType,
-                driveFileId: file.driveFileId,
+                contentType: winner.contentType,
+                value: winner.value,
+                driveFileId,
               },
             });
         }
@@ -152,7 +159,14 @@ export async function syncClient(clientId: string): Promise<void> {
 
     await db
       .update(syncLogs)
-      .set({ status: "success", finishedAt: new Date(), details: { rowsSynced: parsed.length } })
+      .set({
+        status: "success",
+        finishedAt: new Date(),
+        details: {
+          monthlyRows: parsed.length,
+          contentTypeRows: parsedCT.length,
+        },
+      })
       .where(eq(syncLogs.id, logRow.id));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

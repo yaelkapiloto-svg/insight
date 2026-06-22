@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -53,6 +54,15 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       onChange(editor.getHTML());
     },
   });
+
+  // Sync external value changes into the editor without firing onUpdate.
+  useEffect(() => {
+    if (!editor) return;
+    const current = editor.getHTML();
+    if (value !== current) {
+      editor.commands.setContent(value || "", { emitUpdate: false });
+    }
+  }, [value, editor]);
 
   if (!editor) return null;
 

@@ -13,7 +13,7 @@ interface AnalysisInput {
 
 function fmt(n: number | null): string {
   if (n === null) return "אין נתון";
-  return n.toLocaleString("he-IL");
+  return n.toLocaleString("en-US");
 }
 
 function formatChanges(changes: ChangeData): string {
@@ -30,6 +30,21 @@ function formatChanges(changes: ChangeData): string {
     lines.push(`- ${labels[key]}: ${arrow} ${Math.abs(change.percent)}%`);
   }
   return lines.join("\n");
+}
+
+/**
+ * Wrap bare number tokens (digits with optional thousands separators, decimals, %)
+ * in <bdi> tags so they render correctly inside RTL text.
+ * Skips numbers already inside an HTML tag.
+ */
+function wrapNumbers(html: string): string {
+  // Match digit groups, optional thousands separators, optional decimal, optional %
+  const pattern = /(?<![<\w])(\d{1,3}(?:,\d{3})+(?:\.\d+)?%?|\d+(?:\.\d+)?%?)(?!\w)/g;
+  // Don't double-wrap: split by existing tags first
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (segment, tag, text) => {
+    if (tag) return tag;
+    return text.replace(pattern, "<bdi>$1</bdi>");
+  });
 }
 
 export async function generateAnalysis(input: AnalysisInput): Promise<string> {
@@ -75,6 +90,7 @@ ${formatChanges(input.changes)}` : "(אין נתוני חודש קודם להש�
 - כתוב בעברית, בגוף שלישי (לא "אנחנו"), בטון מקצועי וחיובי
 - התמקד במגמות חיוביות, התקדמות, או תובנות ביצוע
 - אזכר נתונים ספציפיים (אחוזים, ערכים) כדי לעגן את הניתוח
+- **חשוב מאוד:** עטוף כל מספר, אחוז וסטטיסטיקה בתגיות <bdi>...</bdi>. לדוגמה: <bdi>1,184,478</bdi> צפיות, עלייה של <bdi>23%</bdi>. זה הכרחי לתצוגה נכונה בעברית.
 - ארגן בפסקאות קצרות, ללא רשימות
 - החזר רק HTML פשוט עם תגיות <p> בלבד (ללא <html>/<body>)
 - ללא מבוא או סיום - רק הניתוח עצמו`;
@@ -89,5 +105,7 @@ ${formatChanges(input.changes)}` : "(אין נתוני חודש קודם להש�
   if (!textBlock || textBlock.type !== "text") {
     throw new Error("No text in AI response");
   }
-  return textBlock.text.trim();
+
+  // Safety net: wrap any bare numbers Claude may have missed
+  return wrapNumbers(textBlock.text.trim());
 }

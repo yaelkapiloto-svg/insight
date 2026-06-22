@@ -1,5 +1,5 @@
 import { listFolder, type DriveFile } from "@/lib/google/drive";
-import { matchMonth, matchContentType, matchMetric, MONTH_ALIASES } from "@/lib/fuzzy";
+import { matchMonth, matchContentType, matchMetric } from "@/lib/fuzzy";
 
 export interface TopContentFile {
   metric: string;
@@ -40,6 +40,38 @@ function findMetricFile(files: DriveFile[], metric: string): DriveFile | null {
     if (matched === metric) return file;
   }
   return null;
+}
+
+/**
+ * Find a single screenshot for a specific (month, contentType, metric).
+ * Returns the Drive file ID or null if not found.
+ */
+export async function findScreenshot(
+  rootFolderId: string,
+  month: string,
+  contentType: string,
+  metric: string
+): Promise<string | null> {
+  const rootItems = await listFolder(rootFolderId);
+  const monthFolder = findMonthFolder(
+    rootItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+    month
+  );
+  if (!monthFolder) return null;
+
+  const monthItems = await listFolder(monthFolder.id);
+  const ctFolder = findContentTypeFolder(
+    monthItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+    contentType
+  );
+  if (!ctFolder) return null;
+
+  const ctFiles = await listFolder(ctFolder.id);
+  const file = findMetricFile(
+    ctFiles.filter((f) => f.mimeType.startsWith("image/")),
+    metric
+  );
+  return file?.id ?? null;
 }
 
 export async function matchDriveFiles(
