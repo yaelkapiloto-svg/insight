@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/auth/admin-magic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ password }),
       });
 
       if (res.ok) {
@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
         </div>
 
         <h1 className="text-xl font-bold text-center text-[#1a1a2e] mb-1">כניסה למערכת ניהול</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">הזיני את האימייל שלך כדי לקבל קישור כניסה</p>
+        <p className="text-sm text-gray-500 text-center mb-6">הזיני סיסמה לקבלת קישור כניסה</p>
 
         {status === "sent" ? (
           <div className="text-center space-y-4">
@@ -72,22 +72,26 @@ export default function AdminLoginPage() {
             )}
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" dir="ltr">
             <div>
-              <label className="block text-sm font-medium text-[#1a1a2e] mb-1">כתובת אימייל</label>
+              <label className="block text-sm font-medium text-[#1a1a2e] mb-1 text-right" dir="rtl">סיסמת מנהל</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="you@example.com"
+                autoComplete="current-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                placeholder="••••••••"
                 className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#e94560] focus:ring-1 focus:ring-[#e94560] transition"
                 dir="ltr"
               />
             </div>
 
             {status === "error" && (
-              <p className="text-sm text-[#e94560]">{errorMsg}</p>
+              <p className="text-sm text-[#e94560] text-right" dir="rtl">{errorMsg}</p>
             )}
 
             <button
@@ -95,7 +99,7 @@ export default function AdminLoginPage() {
               disabled={status === "loading"}
               className="w-full bg-[#1a1a2e] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#2a2a4e] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {status === "loading" ? "שולח..." : "שלח קישור כניסה"}
+              {status === "loading" ? "..." : "כניסה"}
             </button>
           </form>
         )}
