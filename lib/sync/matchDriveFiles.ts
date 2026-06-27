@@ -42,6 +42,56 @@ function findMetricFile(files: DriveFile[], metric: string): DriveFile | null {
   return null;
 }
 
+export interface BestImage {
+  contentType: string;
+  metric: string;
+  driveFileId: string;
+}
+
+const PREFERRED_METRICS = ["views", "reach", "interactions"] as const;
+const CONTENT_TYPES_TO_PICK = ["reels", "stories", "posts"] as const;
+
+/**
+ * For a given (rootFolder, month), return one "headline" image per content type
+ * (Reel / Story / Post), preferring views.png, falling back to reach, interactions.
+ */
+export async function findBestImagePerContentType(
+  rootFolderId: string,
+  month: string
+): Promise<BestImage[]> {
+  const rootItems = await listFolder(rootFolderId);
+  const monthFolder = findMonthFolder(
+    rootItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+    month
+  );
+  if (!monthFolder) return [];
+
+  const monthItems = await listFolder(monthFolder.id);
+  const results: BestImage[] = [];
+
+  for (const contentType of CONTENT_TYPES_TO_PICK) {
+    const ctFolder = findContentTypeFolder(
+      monthItems.filter((f) => f.mimeType === "application/vnd.google-apps.folder"),
+      contentType
+    );
+    if (!ctFolder) continue;
+
+    const ctFiles = (await listFolder(ctFolder.id)).filter((f) =>
+      f.mimeType.startsWith("image/")
+    );
+
+    for (const metric of PREFERRED_METRICS) {
+      const file = findMetricFile(ctFiles, metric);
+      if (file) {
+        results.push({ contentType, metric, driveFileId: file.id });
+        break;
+      }
+    }
+  }
+
+  return results;
+}
+
 /**
  * Find a single screenshot for a specific (month, contentType, metric).
  * Returns the Drive file ID or null if not found.

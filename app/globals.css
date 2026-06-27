@@ -1,55 +1,5 @@
 @import "tailwindcss";
 
-/* Ploni Font Family */
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniRegular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniMedium.otf') format('opentype');
-  font-weight: 500;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniBold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniDBold.otf') format('opentype');
-  font-weight: 800;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniBlack.otf') format('opentype');
-  font-weight: 900;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniLight.otf') format('opentype');
-  font-weight: 300;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniULight.otf') format('opentype');
-  font-weight: 200;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Ploni';
-  src: url('/fonts/PloniUBold.otf') format('opentype');
-  font-weight: 950;
-  font-style: normal;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -57,7 +7,7 @@
   --color-brand-accent: #e94560;
   --color-surface: #f8f8fb;
   --color-border: #e2e8f0;
-  --font-ploni: 'Ploni', 'Arial Hebrew', 'Helvetica Neue', Arial, sans-serif;
+  --font-heebo: var(--font-heebo), 'Arial Hebrew', sans-serif;
 }
 
 :root {
@@ -67,7 +17,7 @@
 
 html {
   direction: rtl;
-  font-family: 'Ploni', 'Arial Hebrew', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-heebo), 'Arial Hebrew', 'Helvetica Neue', Arial, sans-serif;
 }
 
 body {
@@ -94,6 +44,21 @@ bdi, [dir="rtl"] span[dir="ltr"] {
   unicode-bidi: isolate;
   direction: ltr;
   display: inline-block;
+}
+
+/* Readable metric numbers: system font for digits, tabular figures, slightly tracked */
+.metric-num {
+  font-family: 'Inter', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on, "lnum" on;
+  letter-spacing: 0.02em;
+}
+
+/* Any LTR descendant inside the report content gets readable digit spacing */
+#report-content [dir="ltr"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on, "lnum" on;
+  letter-spacing: 0.015em;
 }
 
 /* Print styles for PDF export */

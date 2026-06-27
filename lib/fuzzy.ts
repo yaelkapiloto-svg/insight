@@ -9,9 +9,28 @@ const CONTENT_TYPE_ALIASES: Record<string, string[]> = {
 
 const METRIC_ALIASES: Record<string, string[]> = {
   views: ["צפיות", "views", "view", "צפייה"],
-  reach: ["הגעה", "reach", "הגעות"],
-  interactions: ["אינטראקציות", "תגובות", "interactions", "interaction", "אינטראקציה"],
-  clicks: ["קליקים", "לחיצות", "clicks", "click", "קליק"],
+  reach: ["הגעה", "reach", "הגעות", "ריצ׳", "ריצ'", "ריץ׳", "ריץ'"],
+  interactions: [
+    "אינטראקציות",
+    "אינטרקציות",
+    "אינטראקציות בפוסט",
+    "אינטרקציות בפוסט",
+    "תגובות",
+    "interactions",
+    "interaction",
+    "אינטראקציה",
+    "אינטרקציה",
+  ],
+  clicks: [
+    "קליקים",
+    "לחיצות",
+    "clicks",
+    "click",
+    "קליק",
+    "לחיצות על לינק",
+    "הקלקות על לינק",
+    "הקלקות",
+  ],
 };
 
 export const MONTH_ALIASES: Record<string, string[]> = {

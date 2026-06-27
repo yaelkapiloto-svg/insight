@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Card } from "@/components/ui/Card";
 import { DataPreview } from "@/components/admin/DataPreview";
+import { DatesEditor } from "@/components/admin/DatesEditor";
 
 const HEBREW_MONTHS: Record<string, string> = {
   "01": "ינואר", "02": "פברואר", "03": "מרץ", "04": "אפריל",
@@ -203,22 +204,29 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/admin" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#e94560] transition mb-2">
+      {/* gradient hero strip */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#1a1a2e] to-[#2d1b69] rounded-2xl mb-6 px-6 py-5">
+        <div className="absolute -top-10 -left-10 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#e94560]/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative">
+          <Link href="/admin" className="inline-flex items-center gap-1 text-sm text-white/50 hover:text-white/80 transition mb-2">
             <span>←</span>
-            <span>חזרה לרשימת הלקוחות</span>
+            <span>כל הלקוחות</span>
           </Link>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">{client.name}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">פורטל לקוח</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={sync} disabled={syncing}>
-            {syncing ? "מסנכרן..." : "🔄 סנכרן נתונים"}
-          </Button>
-          <Button variant="secondary" onClick={copyPortalUrl}>
-            {copied ? "✓ הועתק" : "העתק קישור לקוח"}
-          </Button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white">{client.name}</h1>
+              <p className="text-sm text-white/50 mt-0.5">פורטל לקוח</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={sync} disabled={syncing} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                {syncing ? "מסנכרן..." : "↻ סנכרן נתונים"}
+              </Button>
+              <Button variant="secondary" onClick={copyPortalUrl} className="bg-white text-[#1a1a2e] hover:bg-white/90 font-semibold">
+                {copied ? "✓ הועתק" : "העתק קישור לקוח"}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -247,10 +255,10 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
                       setAnalysisHtml(monthReport?.analysisHtml ?? "");
                       setSummaryHtml(monthReport?.summaryHtml ?? "");
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-sm border transition ${
+                    className={`px-3 py-1.5 rounded-lg text-sm border transition font-medium ${
                       selectedMonth === m
-                        ? "bg-[#1a1a2e] text-white border-[#1a1a2e]"
-                        : "bg-white text-[#1a1a2e] border-[#e2e8f0] hover:border-[#1a1a2e]"
+                        ? "bg-gradient-to-r from-[#1a1a2e] to-[#2d1b69] text-white border-transparent shadow-md"
+                        : "bg-white text-[#1a1a2e] border-[#e2e8f0] hover:border-[#1a1a2e] hover:shadow-sm"
                     }`}
                   >
                     {formatMonth(m)}
@@ -276,6 +284,11 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
               threeMonthAverage={dataPayload.threeMonthAverage}
               rawData={dataPayload.rawData}
             />
+          )}
+
+          {/* Filming days + meetings dates */}
+          {selectedMonth && (
+            <DatesEditor clientId={client.id} month={selectedMonth} />
           )}
 
           {/* Analysis editor with AI button */}
@@ -329,9 +342,13 @@ export function ClientDetailClient({ client, months, portalUrl }: Props) {
               <Button onClick={saveDraft} disabled={saving} variant="secondary">
                 {saving ? "שומר..." : "שמור טיוטה"}
               </Button>
-              <Button onClick={publish} disabled={publishing} variant="primary">
+              <button
+                onClick={publish}
+                disabled={publishing}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-[#e94560] to-[#7c3aed] hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              >
                 {publishing ? "מפרסם..." : `פרסם דוח ${formatMonth(selectedMonth)}`}
-              </Button>
+              </button>
               {saveStatus === "saved" && <span className="text-sm text-green-600">נשמר ✓</span>}
               {saveStatus === "error" && <span className="text-sm text-[#e94560]">שגיאה בשמירה</span>}
             </div>

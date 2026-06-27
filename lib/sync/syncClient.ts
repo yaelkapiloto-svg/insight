@@ -11,8 +11,7 @@ import { eq } from "drizzle-orm";
 import { readSheet } from "@/lib/google/sheets";
 import { parseMonthlyData } from "./parseMonthlyData";
 import { parseContentTypeData } from "./parseContentType";
-import { findScreenshot } from "./matchDriveFiles";
-import { pickWinners } from "@/lib/calculations/topContent";
+import { findBestImagePerContentType } from "./matchDriveFiles";
 
 const MONTHLY_SHEET = "נתונים פר חודש";
 const CONTENT_TYPE_SHEET = "נתונים סוג תוכן";
@@ -98,48 +97,32 @@ export async function syncClient(clientId: string): Promise<void> {
       console.error("Content type sheet parsing failed:", err);
     }
 
-    // 3. For each month, pick winners and find matching screenshots
+    // 3. For each synced month, pick best Story/Reel/Post screenshots from Drive
     if (client.driveFolderId) {
-      // Group content type rows by month
-      const byMonth = new Map<string, typeof parsedCT>();
-      for (const row of parsedCT) {
-        const list = byMonth.get(row.month) ?? [];
-        list.push(row);
-        byMonth.set(row.month, list);
-      }
+      for (const row of parsed) {
+        let bestImages: Awaited<ReturnType<typeof findBestImagePerContentType>> = [];
+        try {
+          bestImages = await findBestImagePerContentType(client.driveFolderId, row.month);
+        } catch (err) {
+          console.error("Drive screenshot lookup failed:", err);
+        }
 
-      for (const [month, monthRows] of byMonth) {
-        const winners = pickWinners(monthRows);
-
-        for (const winner of winners) {
-          let driveFileId: string | null = null;
-          try {
-            driveFileId = await findScreenshot(
-              client.driveFolderId,
-              month,
-              winner.contentType,
-              winner.metric
-            );
-          } catch (err) {
-            console.error("Drive screenshot lookup failed:", err);
-          }
-
+        for (const img of bestImages) {
           await db
             .insert(topContent)
             .values({
               clientId,
-              month,
-              metric: winner.metric,
-              contentType: winner.contentType,
-              value: winner.value,
-              driveFileId,
+              month: row.month,
+              metric: img.metric,
+              contentType: img.contentType,
+              value: null,
+              driveFileId: img.driveFileId,
             })
             .onConflictDoUpdate({
-              target: [topContent.clientId, topContent.month, topContent.metric],
+              target: [topContent.clientId, topContent.month, topContent.contentType],
               set: {
-                contentType: winner.contentType,
-                value: winner.value,
-                driveFileId,
+                metric: img.metric,
+                driveFileId: img.driveFileId,
               },
             });
         }

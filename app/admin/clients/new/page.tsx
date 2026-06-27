@@ -46,7 +46,13 @@ export default function NewClientPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-bold text-[#1a1a2e] mb-6">לקוח חדש</h1>
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#1a1a2e] to-[#2d1b69] rounded-2xl mb-6 px-6 py-5">
+        <div className="absolute -top-8 -left-8 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative">
+          <h1 className="text-xl font-bold text-white">לקוח חדש</h1>
+          <p className="text-sm text-white/50 mt-0.5">הוספת לקוח חדש למערכת</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl border border-[#e2e8f0]">
         <Field label="שם הלקוח *" required>

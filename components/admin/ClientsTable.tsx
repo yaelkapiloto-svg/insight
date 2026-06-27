@@ -25,7 +25,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
 
   if (clients.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="text-center py-16 text-gray-400 bg-white rounded-2xl border border-[#e2e8f0]">
         <p className="text-lg">אין לקוחות עדיין</p>
         <p className="text-sm mt-1">לחץ "לקוח חדש" כדי להתחיל</p>
       </div>
@@ -33,41 +33,35 @@ export function ClientsTable({ clients }: ClientsTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#e2e8f0]">
+    <div className="overflow-x-auto rounded-2xl border border-[#e2e8f0] shadow-sm">
       <table className="w-full text-sm">
-        <thead className="bg-[#f8f8fb] text-gray-500 text-xs uppercase tracking-wide">
-          <tr>
-            <th className="px-4 py-3 text-right font-medium">לקוח</th>
-            <th className="px-4 py-3 text-right font-medium">סטטוס</th>
-            <th className="px-4 py-3 text-right font-medium">תאריך הוספה</th>
-            <th className="px-4 py-3 text-right font-medium">פעולות</th>
+        <thead>
+          <tr className="bg-gradient-to-r from-[#1a1a2e] to-[#2d1b69] text-white">
+            <th className="px-5 py-3.5 text-right font-semibold text-xs tracking-wider">לקוח</th>
+            <th className="px-5 py-3.5 text-right font-semibold text-xs tracking-wider">סטטוס</th>
+            <th className="px-5 py-3.5 text-right font-semibold text-xs tracking-wider">תאריך הוספה</th>
+            <th className="px-5 py-3.5 text-right font-semibold text-xs tracking-wider">פעולות</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#e2e8f0] bg-white">
+        <tbody className="divide-y divide-[#f0f0f8] bg-white">
           {clients.map((client) => (
-            <tr key={client.id} className="hover:bg-[#f8f8fb] transition">
-              <td className="px-4 py-3 font-medium text-[#1a1a2e]">{client.name}</td>
-              <td className="px-4 py-3">
+            <tr key={client.id} className="hover:bg-[#fafaff] transition-colors">
+              <td className="px-5 py-3.5 font-semibold text-[#1a1a2e]">{client.name}</td>
+              <td className="px-5 py-3.5">
                 <Badge variant={client.isActive ? "published" : "draft"}>
                   {client.isActive ? "פעיל" : "לא פעיל"}
                 </Badge>
               </td>
-              <td className="px-4 py-3 text-gray-500 text-xs" dir="ltr">
-                {client.createdAt
-                  ? new Date(client.createdAt).toLocaleDateString("he-IL")
-                  : "—"}
+              <td className="px-5 py-3.5 text-gray-400 text-xs" dir="ltr">
+                {client.createdAt ? new Date(client.createdAt).toLocaleDateString("he-IL") : "—"}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-5 py-3.5">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => copyLink(client.id)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => copyLink(client.id)}>
                     {copied === client.id ? "✓ הועתק" : "העתק קישור"}
                   </Button>
                   <Link href={`/admin/clients/${client.id}`}>
-                    <Button variant="ghost" size="sm">עריכה</Button>
+                    <Button variant="ghost" size="sm">עריכה ←</Button>
                   </Link>
                 </div>
               </td>

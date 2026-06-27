@@ -9,6 +9,8 @@ export interface MonthlyMetricData extends MetricSet {
   month: string;
   filmingDays: number | null;
   meetingsCount: number | null;
+  filmingDates: string[];
+  meetingDates: string[];
   followersCount: number | null;
   followersGrowth: number | null;
 }

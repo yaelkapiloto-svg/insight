@@ -8,6 +8,20 @@
       "when": 1780421217037,
       "tag": "0000_ambiguous_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782315263317,
+      "tag": "0001_clammy_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782486266220,
+      "tag": "0002_natural_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

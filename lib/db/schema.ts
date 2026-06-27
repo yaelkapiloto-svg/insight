@@ -52,6 +52,8 @@ export const monthlyMetrics = pgTable(
     month: date("month").notNull(),
     filmingDays: integer("filming_days"),
     meetingsCount: integer("meetings_count"),
+    filmingDates: jsonb("filming_dates").$type<string[]>(),
+    meetingDates: jsonb("meeting_dates").$type<string[]>(),
     views: bigint("views", { mode: "number" }),
     reach: bigint("reach", { mode: "number" }),
     interactions: bigint("interactions", { mode: "number" }),
@@ -103,7 +105,7 @@ export const topContent = pgTable(
     }),
     rawData: jsonb("raw_data"),
   },
-  (t) => [unique().on(t.clientId, t.month, t.metric)]
+  (t) => [unique().on(t.clientId, t.month, t.contentType)]
 );
 
 export const adminMagicTokens = pgTable("admin_magic_tokens", {

@@ -47,6 +47,8 @@ export async function POST(
     month: r.month,
     filmingDays: r.filmingDays,
     meetingsCount: r.meetingsCount,
+    filmingDates: r.filmingDates ?? [],
+    meetingDates: r.meetingDates ?? [],
     views: r.views,
     reach: r.reach,
     interactions: r.interactions,
